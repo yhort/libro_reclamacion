@@ -1,0 +1,1 @@
+<?php echo "La ruta es: " . $_SERVER['REQUEST_URI']; ?>

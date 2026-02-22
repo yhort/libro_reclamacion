@@ -1,0 +1,7 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Si alguien entra a la raíz, mándalo a la carpeta public
+    RewriteRule ^$ public/ [L]
+    # Si alguien busca un archivo, búscalo dentro de public
+    RewriteRule (.*) public/$1 [L]
+</IfModule>
