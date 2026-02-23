@@ -29,7 +29,7 @@
         <p class="text-muted mb-4">Su hoja de reclamación ha sido enviada con éxito. Guarde su número de seguimiento para futuras consultas.</p>
 
         <div class="correlativo-box mb-4">
-            N° <?= htmlspecialchars($codigo) ?>
+            N° <?= htmlspecialchars($correlativo) ?>
         </div>
 
         <p class="small text-muted mb-4">

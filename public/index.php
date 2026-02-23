@@ -1,16 +1,18 @@
 <?php
+
+declare(strict_types=1);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../app/init.php';
+require_once __DIR__ . '/../app/config/mail.php';
 
-// Forzamos que si no hay nada, cargue Reclamo
-$c = $_GET['c'] ?? 'Reclamo';
+$c = $_GET['c'] ?? 'reclamo'; // Por defecto: público
 $a = $_GET['a'] ?? 'index';
 
 $controllerName = ucfirst($c) . 'Controller';
-
 $controllerFile = __DIR__ . '/../app/controllers/' . $controllerName . '.php';
 
 if (file_exists($controllerFile)) {
@@ -21,7 +23,18 @@ if (file_exists($controllerFile)) {
 
 if (class_exists($controllerName)) {
     $obj = new $controllerName();
-    $obj->$a();
+
+    // Seguridad: si es dashboard, exigir login
+    if ($controllerName === 'DashboardController') {
+        Auth::requireLogin();
+    }
+
+    // Ejecutar acción
+    if (method_exists($obj, $a)) {
+        $obj->$a();
+    } else {
+        die("Método $a no existe en $controllerName");
+    }
 } else {
-    die("Error: El archivo app/controllers/$controllerName.php no existe o el nombre de la clase es incorrecto.");
+    die("Clase $controllerName no existe.");
 }

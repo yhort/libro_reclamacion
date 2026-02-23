@@ -1,62 +1,108 @@
 <?php
+
 declare(strict_types=1);
 
-// Importaciones de PHPMailer (Vienen de vendor/ en la raíz vía el autoload de index.php)
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\SMTP;
-
-// Importaciones de Dompdf (Vienen de libs/)
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
-class DashboardController {
+class DashboardController
+{
 
-    public function __construct() {
-        // Protección de sesión mediante tu clase Auth
+    public function __construct()
+    {
+        // Solo usuarios internos
         Auth::requireLogin();
     }
 
-    public function index() {
+    public function index()
+    {
         $db = Db::pdo();
-        
-        $stats = [
-            'total'         => $db->query("SELECT COUNT(*) FROM reclamaciones")->fetchColumn(),
-            'solo_reclamos' => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia = 'Reclamo'")->fetchColumn(),
-            'solo_quejas'   => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia = 'Queja'")->fetchColumn(),
-            'pendientes'    => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE estado = 'Pendiente'")->fetchColumn(),
-        ];
 
-        $anioActual = date('Y');
-        $queryGrafico = $db->prepare("
-            SELECT MONTHNAME(fecha_registro) as mes, COUNT(*) as total 
-            FROM reclamaciones 
-            WHERE YEAR(fecha_registro) = ? 
-            GROUP BY MONTH(fecha_registro) 
-            ORDER BY MONTH(fecha_registro) ASC
-        ");
-        $queryGrafico->execute([$anioActual]);
-        $dataGrafico = $queryGrafico->fetchAll();
+        // Filtros
+        $num_doc     = $_GET['num_doc'] ?? '';
+        $correlativo = $_GET['correlativo'] ?? '';
+        $estado      = $_GET['estado'] ?? '';
+        $tipo        = $_GET['tipo'] ?? '';
+        $desde       = $_GET['desde'] ?? '';
+        $hasta       = $_GET['hasta'] ?? '';
 
-        $labels = []; $valores = [];
-        foreach ($dataGrafico as $row) {
-            $labels[] = $row['mes'];
-            $valores[] = (int)$row['total'];
+        $where = [];
+        $params = [];
+
+        if ($num_doc !== '') {
+            $where[] = "num_doc LIKE ?";
+            $params[] = "%$num_doc%";
+        }
+        if ($correlativo !== '') {
+            $where[] = "correlativo LIKE ?";
+            $params[] = "%$correlativo%";
+        }
+        if ($estado !== '') {
+            $where[] = "estado = ?";
+            $params[] = $estado;
+        }
+        if ($tipo !== '') {
+            $where[] = "tipo_incidencia = ?";
+            $params[] = $tipo;
+        }
+        if ($desde !== '' && $hasta !== '') {
+            $where[] = "DATE(fecha_registro) BETWEEN ? AND ?";
+            $params[] = $desde;
+            $params[] = $hasta;
         }
 
-        $ultimosReclamos = $db->query("SELECT * FROM reclamaciones ORDER BY fecha_registro DESC LIMIT 5")->fetchAll();
+        $sqlWhere = $where ? "WHERE " . implode(" AND ", $where) : "";
+
+        // PAGINACIÓN
+        $porPagina = 10;
+        $pagina = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $pagina = max(1, $pagina);
+        $offset = ($pagina - 1) * $porPagina;
+
+        $stmtTotal = $db->prepare("SELECT COUNT(*) FROM reclamaciones $sqlWhere");
+        $stmtTotal->execute($params);
+        $totalRegistros = $stmtTotal->fetchColumn();
+        $totalPaginas = ceil($totalRegistros / $porPagina);
+
+        $stmt = $db->prepare("SELECT * FROM reclamaciones $sqlWhere ORDER BY fecha_registro DESC LIMIT $porPagina OFFSET $offset");
+        $stmt->execute($params);
+        $ultimosReclamos = $stmt->fetchAll();
+
+        // Estadísticas generales
+        $stats = [
+            'total'         => $db->query("SELECT COUNT(*) FROM reclamaciones")->fetchColumn(),
+            'solo_reclamos' => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia='Reclamo'")->fetchColumn(),
+            'solo_quejas'   => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia='Queja'")->fetchColumn(),
+            'pendientes'    => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE estado='Pendiente'")->fetchColumn(),
+        ];
+
+        // Datos para gráfico mensual
+        $labels = [];
+        $valores = [];
+        $stmtChart = $db->query("SELECT DATE_FORMAT(fecha_registro,'%Y-%m') AS mes, COUNT(*) AS total FROM reclamaciones GROUP BY mes ORDER BY mes ASC");
+        $chartData = $stmtChart->fetchAll();
+        foreach ($chartData as $row) {
+            $labels[] = $row['mes'];
+            $valores[] = $row['total'];
+        }
 
         View::render('dashboard/index', [
-            'stats'           => $stats,
-            'labels'          => json_encode($labels ?: [date('M')]),
-            'valores'         => json_encode($valores ?: [0]),
-            'ultimosReclamos' => $ultimosReclamos 
+            'stats' => $stats,
+            'ultimosReclamos' => $ultimosReclamos,
+            'pagina' => $pagina,
+            'totalPaginas' => $totalPaginas,
+            'labels' => json_encode($labels),
+            'valores' => json_encode($valores),
         ]);
     }
 
-    public function ver() {
+    public function ver()
+    {
         $id = $_GET['id'] ?? null;
-        if (!$id) header("Location: index.php?c=dashboard");
+        if (!$id) header("Location: index.php?c=dashboard&a=index");
 
         $db = Db::pdo();
         $stmt = $db->prepare("SELECT * FROM reclamaciones WHERE id = ?");
@@ -68,16 +114,22 @@ class DashboardController {
         View::render('dashboard/ver', ['r' => $r]);
     }
 
-    public function responder() {
+    public function responder()
+    {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = $_POST['id'];
+            $id = (int) $_POST['id'];
+            if ($id <= 0) {
+                header("Location: index.php?c=dashboard&a=index");
+                exit;
+            }
             $respuesta = $_POST['respuesta_negocio'];
-            
+
             $db = Db::pdo();
-            $stmt = $db->prepare("UPDATE reclamaciones SET respuesta_negocio = ?, estado = 'Atendido', fecha_respuesta = NOW() WHERE id = ?");
+            $stmt = $db->prepare("UPDATE reclamaciones SET respuesta_negocio = ?, estado='Atendido', fecha_respuesta=NOW() WHERE id=?");
             $stmt->execute([$respuesta, $id]);
 
-            $stmt = $db->prepare("SELECT email, nombre_completo, correlativo FROM reclamaciones WHERE id = ?");
+            $stmt = $db->prepare("SELECT email, nombre_completo, correlativo FROM reclamaciones WHERE id=?");
             $stmt->execute([$id]);
             $cliente = $stmt->fetch();
 
@@ -88,72 +140,29 @@ class DashboardController {
         }
     }
 
-    public function imprimir() {
-        $id = $_GET['id'] ?? null;
-        $db = Db::pdo();
-        $stmt = $db->prepare("SELECT * FROM reclamaciones WHERE id = ?");
-        $stmt->execute([$id]);
-        $r = $stmt->fetch();
-
-        if (!$r) die("No existe el registro");
-
-        // RUTA CORRECTA para Dompdf según tu estructura en libs/
-        // Asegúrate de que esta ruta sea exacta a donde tienes el autoload de dompdf
-        require_once __DIR__ . '/../../libs/dompdf/autoload.inc.php';
-
-        $options = new Options();
-        $options->set('isRemoteEnabled', true); // Útil si tienes imágenes con URL en el PDF
-        $dompdf = new Dompdf($options);
-        
-        // El HTML se toma de tu vista específica para el PDF
-        ob_start();
-        // Pasamos la variable $r para que esté disponible en formato_pdf.php
-        require __DIR__ . '/../views/dashboard/formato_pdf.php'; 
-        $html = ob_get_clean();
-
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-
-        // Salida al navegador: Attachment false abre el PDF en la pestaña, true lo descarga.
-        $dompdf->stream("Reclamo_" . $r['correlativo'] . ".pdf", ["Attachment" => false]);
-    }
-
-    private function enviarNotificacionEmail($emailCliente, $nombreCliente, $correlativo, $respuesta) {
+    private function enviarNotificacionEmail($email, $nombre, $correlativo, $respuesta)
+    {
         $mail = new PHPMailer(true);
-
         try {
             $mail->isSMTP();
-            $mail->Host       = MAIL_HOST;
-            $mail->SMTPAuth   = true;
-            $mail->Username   = MAIL_USER;
-            $mail->Password   = MAIL_PASS;
-            // Hostinger suele requerir SMTPS (465) o STARTTLS (587)
-            $mail->SMTPSecure = (MAIL_PORT == 465) ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = MAIL_PORT;
-            $mail->CharSet    = 'UTF-8';
+            $mail->Host = MAIL_HOST;
+            $mail->SMTPAuth = true;
+            $mail->Username = MAIL_USER;
+            $mail->Password = MAIL_PASS;
+            $mail->SMTPSecure = (MAIL_PORT == 465 ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS);
+            $mail->Port = MAIL_PORT;
+            $mail->CharSet = 'UTF-8';
 
             $mail->setFrom(MAIL_USER, MAIL_FROM_NAME);
-            $mail->addAddress($emailCliente, $nombreCliente);
+            $mail->addAddress($email, $nombre);
 
             $mail->isHTML(true);
-            $mail->Subject = "Respuesta a su Reclamacion N° $correlativo - " . MAIL_FROM_NAME;
-            $mail->Body = "
-                <div style='font-family: Arial; padding: 20px; border: 1px solid #eee;'>
-                    <h2 style='color: #004a99;'>Respuesta Oficial</h2>
-                    <p>Estimado(a) <strong>$nombreCliente</strong>,</p>
-                    <p>Le informamos que se ha emitido una respuesta oficial a su reclamo registrado con el código <b>$correlativo</b>:</p>
-                    <div style='background: #f9f9f9; padding: 15px; border-left: 4px solid #004a99; margin: 20px 0;'>
-                        " . nl2br(htmlspecialchars($respuesta)) . "
-                    </div>
-                    <p>Atentamente,<br><strong>" . MAIL_FROM_NAME . "</strong></p>
-                </div>";
+            $mail->Subject = "Respuesta a su Reclamo N° $correlativo";
+            $mail->Body = "<p>Estimado(a) <b>$nombre</b>, su reclamo <b>$correlativo</b> ha sido respondido:</p><p>" . nl2br(htmlspecialchars($respuesta)) . "</p>";
 
             $mail->send();
-            return true;
         } catch (Exception $e) {
             error_log("Error PHPMailer: {$mail->ErrorInfo}");
-            return false;
         }
     }
 }
