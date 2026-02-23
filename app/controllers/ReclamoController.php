@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/../models/Reclamo.php';
+
 
 class ReclamoController {
     private $modelo;
@@ -10,7 +12,7 @@ class ReclamoController {
     }
 
     public function index() {
-        View::render('public/index');
+        View::render('public/formulario_view', [], false);
     }
 
     public function guardar() {
