@@ -1,14 +1,22 @@
 <?php
+
 declare(strict_types=1);
 
-final class Auth {
+final class Auth
+{
     /**
      * Verifica si el usuario está logueado y gestiona el tiempo de inactividad.
      */
-    public static function requireLogin(): void {
+
+    public static function requireLogin(): void
+    {
+
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         // 1. Verificar si existe la sesión básica
         if (!isset($_SESSION['usuario_id'])) {
-            header('Location: ' . BASE_URL . '/login.php');
+            header('Location: login.php');
             exit;
         }
 
@@ -22,7 +30,7 @@ final class Auth {
             if ($tiempoTranscurrido > $tiempoMaximoInactividad) {
                 // Destruir sesión y redirigir con mensaje de error
                 self::logout();
-                header('Location: ' . BASE_URL . '/login.php?error=timeout');
+                header('Location: login.php?error=timeout');
                 exit;
             }
         }
@@ -34,15 +42,21 @@ final class Auth {
     /**
      * Limpia la sesión por completo.
      */
-    public static function logout(): void {
+    public static function logout(): void
+    {
         session_unset();
         session_destroy();
         // Borrar cookie de sesión si existe
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000,
-                $params["path"], $params["domain"],
-                $params["secure"], $params["httponly"]
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params["path"],
+                $params["domain"],
+                $params["secure"],
+                $params["httponly"]
             );
         }
     }
@@ -50,14 +64,16 @@ final class Auth {
     /**
      * Verifica si el usuario tiene un rol específico.
      */
-    public static function hasRole(string $role): bool {
+    public static function hasRole(string $role): bool
+    {
         return ($_SESSION['rol'] ?? '') === $role;
     }
 
     /**
      * Restringe el acceso a ciertos roles.
      */
-    public static function only(array $roles): void {
+    public static function only(array $roles): void
+    {
         // Primero aseguramos que esté logueado
         self::requireLogin();
 

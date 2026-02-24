@@ -6,7 +6,7 @@ class View
     {
         extract($data);
 
-        $viewFile = __DIR__ . '/../../views/' . $view . '.php';
+        $viewFile = __DIR__ . '/../views/' . $view . '.php';
 
         if (!file_exists($viewFile)) {
             die("Vista no encontrada: " . $viewFile);
@@ -19,11 +19,11 @@ class View
         // Selección de layout
         switch ($layout) {
             case 'public':
-                require __DIR__ . '/../../views/layout/public_layout.php';
+                require __DIR__ . '/../views/layout/public_layout.php';
                 break;
 
             case 'app':
-                require __DIR__ . '/../../views/layout/app.php';
+                require __DIR__ . '/../views/layout/app.php';
                 break;
 
             case 'none':
@@ -31,7 +31,7 @@ class View
                 break;
 
             default:
-                require __DIR__ . '/../../views/layout/app.php';
+                require __DIR__ . '/../views/layout/app.php';
         }
     }
 }

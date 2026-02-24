@@ -75,7 +75,7 @@ class ReclamoController
         }
 
         if ($_SESSION['consulta_intentos'] >= 5) {
-            View::render('reclamo/consultar_form', [
+            View::render('reclamo/consulta_form', [
                 'error' => 'Demasiados intentos. Intente más tarde.'
             ], 'public');
             return;
@@ -111,7 +111,7 @@ class ReclamoController
 
     public function consultar_form()
     {
-        View::render('reclamo/consultar_form', [], 'public');
+        View::render('reclamo/consulta_form', [], 'public');
     }
 
     private function enviarCorreo(string $destino, string $correlativo, string $nombre): void

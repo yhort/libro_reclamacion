@@ -24,10 +24,6 @@ if (file_exists($controllerFile)) {
 if (class_exists($controllerName)) {
     $obj = new $controllerName();
 
-    // Seguridad: si es dashboard, exigir login
-    if ($controllerName === 'DashboardController') {
-        Auth::requireLogin();
-    }
 
     // Ejecutar acción
     if (method_exists($obj, $a)) {

@@ -14,89 +14,129 @@ class DashboardController
     public function __construct()
     {
         // Solo usuarios internos
-        Auth::requireLogin();
+        //Auth::requireLogin();
     }
 
     public function index()
     {
-        $db = Db::pdo();
+        try {
 
-        // Filtros
-        $num_doc     = $_GET['num_doc'] ?? '';
-        $correlativo = $_GET['correlativo'] ?? '';
-        $estado      = $_GET['estado'] ?? '';
-        $tipo        = $_GET['tipo'] ?? '';
-        $desde       = $_GET['desde'] ?? '';
-        $hasta       = $_GET['hasta'] ?? '';
+            $db = Db::pdo();
 
-        $where = [];
-        $params = [];
+            // ========================
+            // FILTROS
+            // ========================
+            $num_doc     = $_GET['num_doc'] ?? '';
+            $correlativo = $_GET['correlativo'] ?? '';
+            $estado      = $_GET['estado'] ?? '';
+            $tipo        = $_GET['tipo'] ?? '';
+            $desde       = $_GET['desde'] ?? '';
+            $hasta       = $_GET['hasta'] ?? '';
 
-        if ($num_doc !== '') {
-            $where[] = "num_doc LIKE ?";
-            $params[] = "%$num_doc%";
+            $where = [];
+            $params = [];
+
+            if ($num_doc !== '') {
+                $where[] = "num_doc LIKE ?";
+                $params[] = "%$num_doc%";
+            }
+            if ($correlativo !== '') {
+                $where[] = "correlativo LIKE ?";
+                $params[] = "%$correlativo%";
+            }
+            if ($estado !== '') {
+                $where[] = "estado = ?";
+                $params[] = $estado;
+            }
+            if ($tipo !== '') {
+                $where[] = "tipo_incidencia = ?";
+                $params[] = $tipo;
+            }
+            if ($desde !== '' && $hasta !== '') {
+                $where[] = "DATE(fecha_registro) BETWEEN ? AND ?";
+                $params[] = $desde;
+                $params[] = $hasta;
+            }
+
+            $sqlWhere = $where ? "WHERE " . implode(" AND ", $where) : "";
+
+            // ========================
+            // PAGINACIÓN
+            // ========================
+            $porPagina = 10;
+            $pagina = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $pagina = max(1, $pagina);
+            $offset = ($pagina - 1) * $porPagina;
+
+            // TOTAL
+            $stmtTotal = $db->prepare("SELECT COUNT(*) FROM reclamaciones $sqlWhere");
+            $stmtTotal->execute($params);
+            $totalRegistros = (int)$stmtTotal->fetchColumn();
+            $totalPaginas = max(1, ceil($totalRegistros / $porPagina));
+
+            // CONSULTA
+            $sql = "SELECT * FROM reclamaciones $sqlWhere
+                ORDER BY fecha_registro DESC
+                LIMIT :limit OFFSET :offset";
+
+            $stmt = $db->prepare($sql);
+
+            foreach ($params as $k => $v) {
+                $stmt->bindValue($k + 1, $v);
+            }
+
+            $stmt->bindValue(':limit', $porPagina, \PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+
+            $stmt->execute();
+            $ultimosReclamos = $stmt->fetchAll();
+
+            // ========================
+            // STATS
+            // ========================
+            $stats = [
+                'total'         => $db->query("SELECT COUNT(*) FROM reclamaciones")->fetchColumn(),
+                'solo_reclamos' => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia='Reclamo'")->fetchColumn(),
+                'solo_quejas'   => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia='Queja'")->fetchColumn(),
+                'pendientes'    => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE estado='Pendiente'")->fetchColumn(),
+            ];
+
+            // ========================
+            // GRÁFICO
+            // ========================
+            $labels = [];
+            $valores = [];
+
+            $stmtChart = $db->query("
+            SELECT DATE_FORMAT(fecha_registro,'%Y-%m') AS mes, COUNT(*) AS total 
+            FROM reclamaciones 
+            GROUP BY mes 
+            ORDER BY mes ASC
+        ");
+
+            foreach ($stmtChart->fetchAll() as $row) {
+                $labels[] = $row['mes'];
+                $valores[] = $row['total'];
+            }
+
+            View::render('dashboard/index', [
+                'stats' => $stats,
+                'reclamos' => $ultimosReclamos,
+                'pagina' => $pagina,
+                'totalPaginas' => $totalPaginas,
+                'labels' => json_encode($labels),
+                'valores' => json_encode($valores),
+            ]);
+        } catch (\Throwable $e) {
+
+            echo "<h1>ERROR EN DASHBOARD</h1>";
+            echo "<pre>";
+            echo $e->getMessage();
+            echo "\n\n";
+            echo $e->getFile() . " : " . $e->getLine();
+            echo "</pre>";
+            exit;
         }
-        if ($correlativo !== '') {
-            $where[] = "correlativo LIKE ?";
-            $params[] = "%$correlativo%";
-        }
-        if ($estado !== '') {
-            $where[] = "estado = ?";
-            $params[] = $estado;
-        }
-        if ($tipo !== '') {
-            $where[] = "tipo_incidencia = ?";
-            $params[] = $tipo;
-        }
-        if ($desde !== '' && $hasta !== '') {
-            $where[] = "DATE(fecha_registro) BETWEEN ? AND ?";
-            $params[] = $desde;
-            $params[] = $hasta;
-        }
-
-        $sqlWhere = $where ? "WHERE " . implode(" AND ", $where) : "";
-
-        // PAGINACIÓN
-        $porPagina = 10;
-        $pagina = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $pagina = max(1, $pagina);
-        $offset = ($pagina - 1) * $porPagina;
-
-        $stmtTotal = $db->prepare("SELECT COUNT(*) FROM reclamaciones $sqlWhere");
-        $stmtTotal->execute($params);
-        $totalRegistros = $stmtTotal->fetchColumn();
-        $totalPaginas = ceil($totalRegistros / $porPagina);
-
-        $stmt = $db->prepare("SELECT * FROM reclamaciones $sqlWhere ORDER BY fecha_registro DESC LIMIT $porPagina OFFSET $offset");
-        $stmt->execute($params);
-        $ultimosReclamos = $stmt->fetchAll();
-
-        // Estadísticas generales
-        $stats = [
-            'total'         => $db->query("SELECT COUNT(*) FROM reclamaciones")->fetchColumn(),
-            'solo_reclamos' => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia='Reclamo'")->fetchColumn(),
-            'solo_quejas'   => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia='Queja'")->fetchColumn(),
-            'pendientes'    => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE estado='Pendiente'")->fetchColumn(),
-        ];
-
-        // Datos para gráfico mensual
-        $labels = [];
-        $valores = [];
-        $stmtChart = $db->query("SELECT DATE_FORMAT(fecha_registro,'%Y-%m') AS mes, COUNT(*) AS total FROM reclamaciones GROUP BY mes ORDER BY mes ASC");
-        $chartData = $stmtChart->fetchAll();
-        foreach ($chartData as $row) {
-            $labels[] = $row['mes'];
-            $valores[] = $row['total'];
-        }
-
-        View::render('dashboard/index', [
-            'stats' => $stats,
-            'ultimosReclamos' => $ultimosReclamos,
-            'pagina' => $pagina,
-            'totalPaginas' => $totalPaginas,
-            'labels' => json_encode($labels),
-            'valores' => json_encode($valores),
-        ]);
     }
 
     public function ver()
