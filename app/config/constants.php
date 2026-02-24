@@ -7,7 +7,8 @@ date_default_timezone_set('America/Lima');
 // Usamos la variable de entorno para decidir la URL automáticamente
 if (isset($_ENV['ENTORNO']) && $_ENV['ENTORNO'] === 'local') {
     // Tu ruta en la computadora
-    define('BASE_URL', 'http://localhost/galeria_web/public');
+    //define('BASE_URL', 'http://localhost/galeria_web/public');
+    define('BASE_URL', 'http://localhost/invanelay/public');
 } else {
     // Tu ruta en el hosting real
     define('BASE_URL', 'https://tykesoft.com');

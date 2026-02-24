@@ -4,58 +4,54 @@ declare(strict_types=1);
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-use PHPMailer\PHPMailer\SMTP;
-use Dompdf\Dompdf;
-use Dompdf\Options;
 
 class DashboardController
 {
-
     public function __construct()
     {
         // Solo usuarios internos
-        //Auth::requireLogin();
+        // Auth::requireLogin();
     }
 
     public function index()
     {
         try {
-
             $db = Db::pdo();
 
             // ========================
             // FILTROS
             // ========================
-            $num_doc     = $_GET['num_doc'] ?? '';
-            $correlativo = $_GET['correlativo'] ?? '';
-            $estado      = $_GET['estado'] ?? '';
-            $tipo        = $_GET['tipo'] ?? '';
-            $desde       = $_GET['desde'] ?? '';
-            $hasta       = $_GET['hasta'] ?? '';
+            $num_doc     = trim($_GET['num_doc'] ?? '');
+            $correlativo = trim($_GET['correlativo'] ?? '');
+            $estado      = trim($_GET['estado'] ?? '');
+            $tipo        = trim($_GET['tipo'] ?? '');
+            $desde       = trim($_GET['desde'] ?? '');
+            $hasta       = trim($_GET['hasta'] ?? '');
 
-            $where = [];
+            // ✅ TODO named params
+            $where  = [];
             $params = [];
 
             if ($num_doc !== '') {
-                $where[] = "num_doc LIKE ?";
-                $params[] = "%$num_doc%";
+                $where[] = "num_doc LIKE :num_doc";
+                $params[':num_doc'] = "%{$num_doc}%";
             }
             if ($correlativo !== '') {
-                $where[] = "correlativo LIKE ?";
-                $params[] = "%$correlativo%";
+                $where[] = "correlativo LIKE :correlativo";
+                $params[':correlativo'] = "%{$correlativo}%";
             }
             if ($estado !== '') {
-                $where[] = "estado = ?";
-                $params[] = $estado;
+                $where[] = "estado = :estado";
+                $params[':estado'] = $estado;
             }
             if ($tipo !== '') {
-                $where[] = "tipo_incidencia = ?";
-                $params[] = $tipo;
+                $where[] = "tipo_incidencia = :tipo";
+                $params[':tipo'] = $tipo;
             }
             if ($desde !== '' && $hasta !== '') {
-                $where[] = "DATE(fecha_registro) BETWEEN ? AND ?";
-                $params[] = $desde;
-                $params[] = $hasta;
+                $where[] = "DATE(fecha_registro) BETWEEN :desde AND :hasta";
+                $params[':desde'] = $desde;
+                $params[':hasta'] = $hasta;
             }
 
             $sqlWhere = $where ? "WHERE " . implode(" AND ", $where) : "";
@@ -72,63 +68,65 @@ class DashboardController
             $stmtTotal = $db->prepare("SELECT COUNT(*) FROM reclamaciones $sqlWhere");
             $stmtTotal->execute($params);
             $totalRegistros = (int)$stmtTotal->fetchColumn();
-            $totalPaginas = max(1, ceil($totalRegistros / $porPagina));
+            $totalPaginas = max(1, (int)ceil($totalRegistros / $porPagina));
 
-            // CONSULTA
+            // LISTA
             $sql = "SELECT * FROM reclamaciones $sqlWhere
-                ORDER BY fecha_registro DESC
-                LIMIT :limit OFFSET :offset";
+                    ORDER BY fecha_registro DESC
+                    LIMIT :limit OFFSET :offset";
 
             $stmt = $db->prepare($sql);
 
-            foreach ($params as $k => $v) {
-                $stmt->bindValue($k + 1, $v);
+            // bind filtros
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
             }
 
-            $stmt->bindValue(':limit', $porPagina, \PDO::PARAM_INT);
-            $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+            // bind paginación
+            $stmt->bindValue(':limit', $porPagina, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 
             $stmt->execute();
-            $ultimosReclamos = $stmt->fetchAll();
+            $reclamos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // ========================
             // STATS
             // ========================
             $stats = [
-                'total'         => $db->query("SELECT COUNT(*) FROM reclamaciones")->fetchColumn(),
-                'solo_reclamos' => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia='Reclamo'")->fetchColumn(),
-                'solo_quejas'   => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia='Queja'")->fetchColumn(),
-                'pendientes'    => $db->query("SELECT COUNT(*) FROM reclamaciones WHERE estado='Pendiente'")->fetchColumn(),
+                'total'         => (int)$db->query("SELECT COUNT(*) FROM reclamaciones")->fetchColumn(),
+                'solo_reclamos' => (int)$db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia='Reclamo'")->fetchColumn(),
+                'solo_quejas'   => (int)$db->query("SELECT COUNT(*) FROM reclamaciones WHERE tipo_incidencia='Queja'")->fetchColumn(),
+                'pendientes'    => (int)$db->query("SELECT COUNT(*) FROM reclamaciones WHERE estado='Pendiente'")->fetchColumn(),
             ];
 
             // ========================
             // GRÁFICO
             // ========================
-            $labels = [];
+            $labels  = [];
             $valores = [];
 
             $stmtChart = $db->query("
-            SELECT DATE_FORMAT(fecha_registro,'%Y-%m') AS mes, COUNT(*) AS total 
-            FROM reclamaciones 
-            GROUP BY mes 
-            ORDER BY mes ASC
-        ");
+                SELECT DATE_FORMAT(fecha_registro,'%Y-%m') AS mes, COUNT(*) AS total
+                FROM reclamaciones
+                GROUP BY mes
+                ORDER BY mes ASC
+            ");
 
-            foreach ($stmtChart->fetchAll() as $row) {
-                $labels[] = $row['mes'];
-                $valores[] = $row['total'];
+            foreach ($stmtChart->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $labels[]  = $row['mes'];
+                $valores[] = (int)$row['total'];
             }
 
             View::render('dashboard/index', [
                 'stats' => $stats,
-                'reclamos' => $ultimosReclamos,
+                'reclamos' => $reclamos,
                 'pagina' => $pagina,
                 'totalPaginas' => $totalPaginas,
                 'labels' => json_encode($labels),
                 'valores' => json_encode($valores),
             ]);
-        } catch (\Throwable $e) {
 
+        } catch (\Throwable $e) {
             echo "<h1>ERROR EN DASHBOARD</h1>";
             echo "<pre>";
             echo $e->getMessage();
@@ -147,7 +145,7 @@ class DashboardController
         $db = Db::pdo();
         $stmt = $db->prepare("SELECT * FROM reclamaciones WHERE id = ?");
         $stmt->execute([$id]);
-        $r = $stmt->fetch();
+        $r = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$r) die("Reclamo no encontrado.");
 
@@ -157,13 +155,13 @@ class DashboardController
     public function responder()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id'];
-            $id = (int) $_POST['id'];
+            $id = (int)($_POST['id'] ?? 0);
             if ($id <= 0) {
                 header("Location: index.php?c=dashboard&a=index");
                 exit;
             }
-            $respuesta = $_POST['respuesta_negocio'];
+
+            $respuesta = (string)($_POST['respuesta_negocio'] ?? '');
 
             $db = Db::pdo();
             $stmt = $db->prepare("UPDATE reclamaciones SET respuesta_negocio = ?, estado='Atendido', fecha_respuesta=NOW() WHERE id=?");
@@ -171,7 +169,7 @@ class DashboardController
 
             $stmt = $db->prepare("SELECT email, nombre_completo, correlativo FROM reclamaciones WHERE id=?");
             $stmt->execute([$id]);
-            $cliente = $stmt->fetch();
+            $cliente = $stmt->fetch(PDO::FETCH_ASSOC);
 
             $this->enviarNotificacionEmail($cliente['email'], $cliente['nombre_completo'], $cliente['correlativo'], $respuesta);
 

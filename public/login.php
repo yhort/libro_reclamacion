@@ -1,15 +1,11 @@
 <?php
-
-declare(strict_types=1);
+//declare(strict_types=1);
+ini_set('display_errors', 1);
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 session_start();
-
-
-
 require_once __DIR__ . '/../app/core/Env.php';
 Env::load(__DIR__ . '/../.env');
-
 require_once __DIR__ . '/../app/config/constants.php';
 require_once __DIR__ . '/../app/config/database.php';
 require_once __DIR__ . '/../app/core/Db.php';

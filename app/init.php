@@ -10,6 +10,7 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/core/Db.php';
 require_once __DIR__ . '/core/View.php';
 require_once __DIR__ . '/core/Auth.php'; // ← AGREGA ESTA LÍNEA
+require_once __DIR__ . '/config/constants.php';
 
 // Autoload para controladores
 spl_autoload_register(function($class) {
