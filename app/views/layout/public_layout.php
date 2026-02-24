@@ -1,153 +1,113 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <title><?= htmlspecialchars($title ?? 'Libro de Reclamaciones') ?></title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title><?= htmlspecialchars($title ?? 'Libro de Reclamaciones') ?></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Fonts (igual que el admin) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5/index.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <style>
-        :root {
-            --brand: #004a99;
-            --brand-2: #0b63c7;
-            --bg: #f4f7f6;
-            --card: #ffffff;
-            --text: #0f172a;
-            --muted: #64748b;
-            --border: #e5e7eb;
-            --radius: 18px;
-        }
+  <!-- Bootstrap + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1/font/bootstrap-icons.min.css" />
 
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        }
+  <style>
+    :root{
+      --brand:#0b5ed7;          /* azul moderno */
+      --brand-2:#0a58ca;
+      --bg:#f6f7fb;
+      --text:#0f172a;
+      --muted:#64748b;
+      --card:#ffffff;
+      --radius:18px;
+    }
 
-        .public-header {
-            background: linear-gradient(135deg, var(--brand), var(--brand-2));
-            color: #fff;
-        }
+    body{
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(11,94,215,.10), transparent 60%),
+                  radial-gradient(1200px 600px at 80% 0%, rgba(99,102,241,.10), transparent 60%),
+                  var(--bg);
+      font-family: "Source Sans 3","Inter",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color: var(--text);
+    }
 
-        .brand-badge {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, .15);
-            border: 1px solid rgba(255, 255, 255, .25);
-            backdrop-filter: blur(8px);
-        }
+    .public-nav{
+      background: rgba(255,255,255,.85);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(15,23,42,.06);
+    }
 
-        .public-shell {
-            max-width: 980px;
-            margin: 0 auto;
-            padding: 22px 14px;
-        }
+    .brand-badge{
+      width:40px;height:40px;border-radius:12px;
+      background: linear-gradient(135deg,var(--brand),#2563eb);
+      display:flex;align-items:center;justify-content:center;
+      color:#fff;
+      box-shadow: 0 10px 25px rgba(11,94,215,.25);
+      flex: 0 0 auto;
+    }
 
-        .public-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, .08);
-        }
+    .brand-title{ font-weight:800; letter-spacing:-.5px; margin:0; line-height:1.1; }
+    .brand-sub{ color:var(--muted); font-size:.9rem; margin:0; }
 
-        .btn-brand {
-            background: #fff;
-            color: var(--brand);
-            border: 0;
-            font-weight: 700;
-            border-radius: 999px;
-            padding: .6rem 1.0rem;
-        }
+    .public-wrap{
+      padding: 28px 0 40px;
+    }
 
-        .btn-brand:hover {
-            opacity: .95;
-        }
+    .public-card{
+      background: var(--card);
+      border: 1px solid rgba(15,23,42,.06);
+      border-radius: var(--radius);
+      box-shadow: 0 25px 50px -12px rgba(15,23,42,.12);
+    }
 
-        .btn-primary {
-            background: var(--brand);
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            padding: .75rem 1rem;
-        }
+    .btn-brand{
+      background: var(--brand);
+      border: none;
+      border-radius: 12px;
+      padding: .65rem 1rem;
+      font-weight: 700;
+    }
+    .btn-brand:hover{ background: var(--brand-2); }
 
-        .btn-primary:hover {
-            background: #003b7a;
-        }
-
-        .form-control,
-        .form-select {
-            border-radius: 12px;
-            border-color: var(--border);
-            padding: .75rem .9rem;
-        }
-
-        .form-control:focus,
-        .form-select:focus {
-            border-color: rgba(0, 74, 153, .35);
-            box-shadow: 0 0 0 .25rem rgba(0, 74, 153, .12);
-        }
-
-        .muted {
-            color: var(--muted);
-        }
-
-        footer {
-            color: var(--muted);
-        }
-    </style>
+    .footer{
+      color: var(--muted);
+      font-size: .9rem;
+      padding: 24px 0 32px;
+    }
+  </style>
 </head>
 
 <body>
 
-    <header class="public-header">
-        <div class="public-shell">
-            <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="brand-badge">
-                        <!-- icon -->
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                            <path d="M4 7.5L12 3l8 4.5V21a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7.5Z" stroke="white" stroke-width="1.8" />
-                            <path d="M9 22V12h6v10" stroke="white" stroke-width="1.8" />
-                        </svg>
-                    </div>
+  <nav class="navbar public-nav py-3">
+    <div class="container d-flex align-items-center gap-3">
+      <div class="brand-badge"><i class="bi bi-journal-check fs-5"></i></div>
 
-                    <div>
-                        <div class="fw-bold" style="font-size:1.05rem; letter-spacing:-.2px;">Libro de Reclamaciones Virtual</div>
-                        <div class="opacity-75" style="font-size:.9rem;">Tykesoft • Atención al consumidor</div>
-                    </div>
-                </div>
+      <div class="me-auto">
+        <p class="brand-title">Libro de Reclamaciones Virtual</p>
+        <p class="brand-sub">Tykesoft · Atención al consumidor</p>
+      </div>
 
-                <div class="d-flex align-items-center gap-2">
-                    <a class="btn btn-brand" href="index.php?c=reclamo&a=consultar_form">Consultar estado</a>
-                </div>
-            </div>
-        </div>
-    </header>
+      <a class="btn btn-outline-primary rounded-3 px-3"
+         href="index.php?c=reclamo&a=consultar_form">
+        <i class="bi bi-search me-2"></i>Consultar estado
+      </a>
+    </div>
+  </nav>
 
-    <main class="public-shell">
-        <div class="public-card p-3 p-md-4">
-            <?= $content ?>
-        </div>
+  <main class="public-wrap">
+    <div class="container">
+      <?= $content ?>
+    </div>
+  </main>
 
-        <div class="text-center mt-4">
-            <div class="small muted">
-                Conforme al Código de Protección y Defensa del Consumidor • Plazo de respuesta máximo: 15 días hábiles
-            </div>
-        </div>
-    </main>
+  <div class="footer text-center">
+    &copy; <?= date('Y') ?> Tykesoft. Todos los derechos reservados.
+  </div>
 
-    <footer class="text-center py-4 small">
-        &copy; <?= date('Y') ?> Tykesoft. Todos los derechos reservados.
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

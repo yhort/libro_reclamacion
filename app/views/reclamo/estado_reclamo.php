@@ -1,70 +1,95 @@
-<?php if (empty($r)): ?>
-    <div class="text-center">
-        <div class="alert alert-danger border-0">
-            No se encontró el reclamo. Verifique los datos ingresados.
-        </div>
-        <a href="index.php?c=reclamo&a=consultar_form" class="btn btn-primary px-4">
-            Intentar nuevamente
-        </a>
-    </div>
-<?php else: ?>
+<?php
+$estado = strtoupper(trim((string)($r['estado'] ?? 'PENDIENTE')));
 
-    <?php
-    $estado = (string)($r['estado'] ?? 'Pendiente');
-    $estadoUpper = strtoupper($estado);
+$badgeClass = 'bg-warning text-dark';
+$icon = 'bi-hourglass-split';
+$mensaje = 'Su reclamo aún se encuentra en revisión.';
 
-    $badge = 'text-bg-warning';
-    if (strcasecmp($estado, 'Atendido') === 0) $badge = 'text-bg-success';
-    if (stripos($estado, 'Revision') !== false) $badge = 'text-bg-primary';
-    ?>
+if ($estado === 'ATENDIDO') {
+    $badgeClass = 'bg-success';
+    $icon = 'bi-check2-circle';
+    $mensaje = 'Su reclamo ha sido atendido. Revise la respuesta.';
+} elseif ($estado === 'EN REVISION' || $estado === 'EN REVISIÓN') {
+    $badgeClass = 'bg-info';
+    $icon = 'bi-search';
+    $mensaje = 'Su reclamo está siendo revisado por nuestro equipo.';
+} elseif ($estado === 'PENDIENTE') {
+    $badgeClass = 'bg-warning text-dark';
+    $icon = 'bi-clock-history';
+    $mensaje = 'Su reclamo fue recibido y está pendiente de revisión.';
+}
+?>
 
-    <div class="text-center mb-4">
-        <h2 class="fw-bold mb-1">Estado de tu reclamación</h2>
-        <div class="muted">Guarda tu código para futuras consultas.</div>
-    </div>
+<div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8 col-xl-7">
 
-    <div class="p-3 p-md-4" style="border:1px solid #e5e7eb;border-radius:18px;background:#fff;">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
-            <div>
-                <div class="muted small mb-1">Código</div>
-                <div class="fw-bold" style="font-size:1.35rem;">
-                    <?= htmlspecialchars($r['correlativo']) ?>
+        <div class="public-card p-4 p-md-5">
+            <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                <div>
+                    <h3 class="fw-bold mb-1">Estado de su reclamación</h3>
+                    <div class="text-muted">
+                        Código:
+                        <span class="fw-semibold text-primary"><?= htmlspecialchars($r['correlativo'] ?? '') ?></span>
+                    </div>
                 </div>
-            </div>
 
-            <div class="text-md-end">
-                <div class="muted small mb-1">Estado</div>
-                <span class="badge rounded-pill <?= $badge ?> px-3 py-2" style="font-size:.95rem;">
-                    <?= htmlspecialchars($estadoUpper) ?>
+                <span class="badge rounded-pill px-3 py-2 <?= $badgeClass ?>">
+                    <i class="bi <?= $icon ?> me-1"></i> <?= htmlspecialchars($estado) ?>
                 </span>
             </div>
-        </div>
 
-        <hr class="my-4">
+            <div class="alert alert-light border mt-4 mb-4 d-flex gap-2">
+                <i class="bi bi-info-circle-fill mt-1 text-primary"></i>
+                <div class="text-muted"><?= htmlspecialchars($mensaje) ?></div>
+            </div>
 
-        <?php if (strcasecmp($estado, 'Atendido') === 0): ?>
-            <div class="text-start">
-                <div class="fw-bold mb-2">Respuesta de Tykesoft</div>
-                <div class="p-3" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;">
-                    <?= nl2br(htmlspecialchars((string)($r['respuesta_negocio'] ?? ''))) ?>
-                </div>
-                <?php if (!empty($r['fecha_respuesta'])): ?>
-                    <div class="muted small mt-2">
-                        Respondido el: <?= date('d/m/Y', strtotime($r['fecha_respuesta'])) ?>
+            <?php if ($estado === 'ATENDIDO'): ?>
+                <div class="mb-3">
+                    <div class="fw-semibold mb-2">Respuesta del negocio</div>
+                    <div class="p-3 bg-body-tertiary border rounded-4">
+                        <?= nl2br(htmlspecialchars((string)($r['respuesta_negocio'] ?? ''))) ?>
                     </div>
-                <?php endif; ?>
-            </div>
-        <?php else: ?>
-            <div class="muted">
-                Tu reclamo aún se encuentra en revisión. Te notificaremos cuando haya una respuesta.
-            </div>
-        <?php endif; ?>
+                    <?php if (!empty($r['fecha_respuesta'])): ?>
+                        <div class="small text-muted mt-2">
+                            Respondido el: <?= date('d/m/Y', strtotime((string)$r['fecha_respuesta'])) ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="small text-muted">Titular</div>
+                        <div class="fw-semibold"><?= htmlspecialchars((string)($r['nombre_completo'] ?? '')) ?></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="small text-muted">Documento</div>
+                        <div class="fw-semibold"><?= htmlspecialchars((string)($r['num_doc'] ?? '')) ?></div>
+                    </div>
 
-        <div class="d-flex justify-content-end mt-4">
-            <a href="index.php?c=reclamo&a=index" class="btn btn-outline-secondary px-4" style="border-radius:12px;">
-                Volver
-            </a>
+                    <div class="col-md-6">
+                        <div class="small text-muted">Tipo</div>
+                        <div class="fw-semibold"><?= htmlspecialchars((string)($r['tipo_incidencia'] ?? '')) ?></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="small text-muted">Registrado</div>
+                        <div class="fw-semibold">
+                            <?= !empty($r['fecha_registro']) ? date('d/m/Y', strtotime((string)$r['fecha_registro'])) : '-' ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <hr class="my-4">
+
+            <div class="d-grid gap-2 d-sm-flex justify-content-between">
+                <a href="index.php?c=reclamo&a=consultar_form" class="btn btn-outline-secondary rounded-3 px-4">
+                    <i class="bi bi-arrow-left me-2"></i>Otra consulta
+                </a>
+                <a href="index.php?c=reclamo&a=index" class="btn btn-brand rounded-3 px-4">
+                    <i class="bi bi-house me-2"></i>Volver al inicio
+                </a>
+            </div>
         </div>
-    </div>
 
-<?php endif; ?>
+    </div>
+</div>

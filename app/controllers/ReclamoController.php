@@ -96,7 +96,7 @@ class ReclamoController
         if (!$r) {
             $_SESSION['consulta_intentos']++;
 
-            View::render('reclamo/consultar_form', [
+            View::render('reclamo/consulta_form', [
                 'error' => 'No se encontró el reclamo. Verifique los datos.'
             ], 'public');
             return;

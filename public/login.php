@@ -78,31 +78,37 @@ $cssIcons     = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootst
             --primary-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         }
 
+        /* Mejor 100dvh para móviles modernos + fallback */
         body.login-page {
             background: #f1f5f9;
-            height: 100vh;
+            min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: 'Segoe UI', Roboto, sans-serif;
+            padding: 24px 12px;
+            /* ✅ espacio en móviles */
         }
 
+        /* ✅ ancho fluido y máximo */
         .login-box {
-            width: 420px;
+            width: 100%;
+            max-width: 420px;
         }
 
         .card {
             border: none;
             border-radius: 1.25rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .15);
             overflow: hidden;
         }
 
         .brand-header {
             background: var(--primary-gradient);
-            padding: 2.5rem 2rem;
+            padding: 2rem 1.5rem;
             text-align: center;
-            color: white;
+            color: #fff;
         }
 
         .login-logo b {
@@ -111,25 +117,25 @@ $cssIcons     = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootst
         }
 
         .login-card-body {
-            padding: 2rem 2.5rem;
+            padding: 1.5rem;
         }
 
         .form-control {
-            border-radius: 0.6rem;
-            padding: 0.75rem 1rem;
+            border-radius: .6rem;
+            padding: .75rem 1rem;
             border: 1px solid #e2e8f0;
         }
 
         .form-control:focus {
             border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
         }
 
         .btn-primary {
             background: #2563eb;
             border: none;
-            border-radius: 0.6rem;
-            padding: 0.75rem;
+            border-radius: .6rem;
+            padding: .85rem;
             font-weight: 600;
         }
 
@@ -141,7 +147,119 @@ $cssIcons     = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootst
             background: #f8fafc;
             border-color: #e2e8f0;
             color: #94a3b8;
-            border-radius: 0 0.6rem 0.6rem 0 !important;
+            border-radius: 0 .6rem .6rem 0 !important;
+        }
+
+        /* ✅ Ajustes en pantallas pequeñas */
+        @media (max-width: 576px) {
+            body.login-page {
+                padding: 18px 10px;
+            }
+
+            .brand-header {
+                padding: 1.5rem 1.25rem;
+            }
+
+            .login-logo b {
+                font-size: 1.55rem;
+            }
+
+            .login-card-body {
+                padding: 1.25rem;
+            }
+        }
+
+        /* ✅ Ajustes en pantallas grandes */
+        @media (min-width: 992px) {
+            .brand-header {
+                padding: 2.2rem 2rem;
+            }
+
+            .login-card-body {
+                padding: 2rem 2.5rem;
+            }
+        }
+
+        .brand-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(96, 165, 250, .18);
+            border: 1px solid rgba(96, 165, 250, .25);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, .18);
+        }
+
+        .brand-icon i {
+            font-size: 1.7rem;
+            color: #93c5fd;
+        }
+
+        .brand-text {
+            text-align: left;
+            line-height: 1.2;
+        }
+
+        .brand-title {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .brand-name {
+            font-size: 1.45rem;
+            font-weight: 800;
+            letter-spacing: -.5px;
+        }
+
+        .brand-sub {
+            font-size: 1.15rem;
+            font-weight: 700;
+            opacity: .9;
+        }
+
+        .brand-dot {
+            opacity: .65;
+        }
+
+        .brand-desc {
+            margin-top: 6px;
+            font-size: .9rem;
+            opacity: .8;
+        }
+
+        /* Móvil: centra texto y ajusta tamaños */
+        @media (max-width:576px) {
+            .brand-wrap {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .brand-text {
+                text-align: center;
+            }
+
+            .brand-name {
+                font-size: 1.35rem;
+            }
+
+            .brand-sub {
+                font-size: 1.05rem;
+            }
+
+            .brand-desc {
+                font-size: .85rem;
+            }
         }
     </style>
 </head>
@@ -151,11 +269,20 @@ $cssIcons     = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootst
     <div class="login-box">
         <div class="card">
             <div class="brand-header">
-                <div class="login-logo mb-0">
-                    <i class="bi bi-shield-lock-fill d-block mb-2" style="font-size: 2.5rem; color: #60a5fa;"></i>
-                    <b>GALERÍA</b> GESTIÓN
+                <div class="brand-wrap">
+                    <div class="brand-icon">
+                        <i class="bi bi-shield-lock-fill"></i>
+                    </div>
+
+                    <div class="brand-text">
+                        <div class="brand-title">
+                            <span class="brand-name">Reclama</span>
+                            <span class="brand-dot">•</span>
+                            <span class="brand-sub">Tykesoft</span>
+                        </div>
+                        <div class="brand-desc">Panel Administrativo · Libro de Reclamaciones</div>
+                    </div>
                 </div>
-                <p class="small text-blue-200 opacity-75 mb-0">Panel Administrativo - Libro Reclamación</p>
             </div>
 
             <div class="card-body login-card-body">
@@ -166,11 +293,11 @@ $cssIcons     = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootst
                     </div>
                 <?php endif; ?>
 
-                <form method="post" autocomplete="off">
+                <form method="post" autocomplete="off" class="mt-3">
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">USUARIO</label>
                         <div class="input-group">
-                            <input type="text" name="username" class="form-control" placeholder="Ej: admin.central" value="<?= htmlspecialchars($username) ?>" autofocus required>
+                            <input type="text" name="username" inputmode="text" class="form-control" placeholder="Ej: admin.central" value="<?= htmlspecialchars($username) ?>" autofocus required>
                             <span class="input-group-text"><i class="bi bi-person"></i></span>
                         </div>
                     </div>
@@ -190,7 +317,7 @@ $cssIcons     = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootst
             </div>
         </div>
         <p class="text-center mt-4 text-muted small">
-            &copy; <?= date('Y') ?> Galería Comercial - Versión 2.0
+            &copy; <?= date('Y') ?> Libro Reclamacion - TykeSoft
         </p>
     </div>
 

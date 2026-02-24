@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class DashboardController
 {
@@ -125,7 +127,6 @@ class DashboardController
                 'labels' => json_encode($labels),
                 'valores' => json_encode($valores),
             ]);
-
         } catch (\Throwable $e) {
             echo "<h1>ERROR EN DASHBOARD</h1>";
             echo "<pre>";
@@ -202,5 +203,59 @@ class DashboardController
         } catch (Exception $e) {
             error_log("Error PHPMailer: {$mail->ErrorInfo}");
         }
+    }
+
+    public function imprimir()
+    {
+        $id = (int)($_GET['id'] ?? 0);
+        if ($id <= 0) die("ID inválido");
+
+        $db = Db::pdo();
+        $stmt = $db->prepare("SELECT * FROM reclamaciones WHERE id=?");
+        $stmt->execute([$id]);
+        $r = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$r) die("Reclamo no encontrado.");
+
+        // 1) HTML
+        ob_start();
+        require __DIR__ . '/../views/dashboard/formato_pdf.php';
+        $html = ob_get_clean();
+
+        // 2) ✅ DIRECTORIOS (RUTAS FÍSICAS, NO URL)
+        // __DIR__ = app/controllers
+        $base = dirname(__DIR__); // app
+        $storage = $base . '/storage/dompdf';
+        $tmpDir  = $storage . '/tmp';
+        $fontDir = $storage . '/fonts';
+
+        // 3) Crear y validar
+        foreach ([$storage, $tmpDir, $fontDir] as $dir) {
+            if (!is_dir($dir)) {
+                if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
+                    die("No se pudo crear: $dir");
+                }
+            }
+            if (!is_writable($dir)) {
+                die("No escribible: $dir (chmod 777 solo en local)");
+            }
+        }
+
+        // 4) Dompdf options
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('isHtml5ParserEnabled', true);
+
+        // ✅ CLAVE: SIEMPRE paths no vacíos
+        $options->set('tempDir', $tmpDir);
+        $options->set('fontDir', $fontDir);
+        $options->set('fontCache', $fontDir);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->render();
+
+        $dompdf->stream('reclamo_' . $r['correlativo'] . '.pdf', ['Attachment' => false]);
+        exit;
     }
 }

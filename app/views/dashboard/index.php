@@ -3,7 +3,7 @@
         <div class="row align-items-center">
             <div class="col-sm-6">
                 <h3 class="fw-bold text-dark mb-0">Gestión de Reclamaciones</h3>
-                <p class="text-muted small">Resumen del estado de quejas y reclamos de Tykesoft.</p>
+                <p class="text-muted small">Resumen del estado de quejas y reclamos - Tykesoft.</p>
             </div>
             <div class="col-sm-6 text-end">
                 <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">

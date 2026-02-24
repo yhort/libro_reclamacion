@@ -1,14 +1,14 @@
 <?php
 
 /** @var string|null $pageTitle */
-$title = $pageTitle ?? 'Galería';
+$title = $pageTitle ?? 'Portal-LibReclama';
 ?>
 <!doctype html>
 <html lang="es">
 
 <head>
   <meta charset="utf-8" />
-  <title><?= htmlspecialchars($title) ?> | Galería</title>
+  <title><?= htmlspecialchars($title) ?> | LibroRecl</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5/index.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2/styles/overlayscrollbars.min.css" />

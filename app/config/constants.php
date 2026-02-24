@@ -4,7 +4,7 @@ declare(strict_types=1);
 date_default_timezone_set('America/Lima');
 
 
-// Usamos la variable de entorno para decidir la URL automáticamente
+/* // Usamos la variable de entorno para decidir la URL automáticamente
 if (isset($_ENV['ENTORNO']) && $_ENV['ENTORNO'] === 'local') {
     // Tu ruta en la computadora
     //define('BASE_URL', 'http://localhost/galeria_web/public');
@@ -13,7 +13,15 @@ if (isset($_ENV['ENTORNO']) && $_ENV['ENTORNO'] === 'local') {
     // Tu ruta en el hosting real
     define('BASE_URL', 'https://tykesoft.com');
 }
+ */
 
+date_default_timezone_set('America/Lima');
+
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+
+define('BASE_URL', $scheme . '://' . $host . $basePath);
 /**
  * Genera URLs para los assets (CSS, JS, Imágenes)
  */

@@ -12,7 +12,7 @@ $rol = $_SESSION['rol'] ?? '';
       <div class="bg-primary shadow-sm rounded-3 d-inline-flex align-items-center justify-content-center me-2" style="width:34px; height:34px;">
         <i class="bi bi-buildings-fill text-white small"></i>
       </div>
-      <span class="brand-text fw-bold text-dark" style="letter-spacing: -0.5px;">Galería<span class="text-primary">Pro</span></span>
+      <span class="brand-text fw-bold text-dark" style="letter-spacing: -0.5px;">Lib<span class="text-primary">Reclamacion</span></span>
     </a>
   </div>
 

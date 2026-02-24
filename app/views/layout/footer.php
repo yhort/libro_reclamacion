@@ -3,7 +3,7 @@ v</div>
 </main>
 
 <footer class="app-footer">
-    <div class="float-end d-none d-sm-inline">Galería</div>
+    <div class="float-end d-none d-sm-inline">Libro de Reclamacion</div>
     <strong>&copy; <?= date('Y') ?>.</strong> Todos los derechos reservados.
 </footer>
 
